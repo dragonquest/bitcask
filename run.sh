@@ -1,0 +1,1 @@
+RUST_LOG=trace cargo run --example=simple

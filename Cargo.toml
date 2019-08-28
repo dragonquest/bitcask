@@ -1,0 +1,20 @@
+[package]
+name = "bitcask"
+version = "0.1.0"
+authors = ["Andreas N. <andreasmarketingpower@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.97", features = ["derive"] } # required for T constraints
+bincode = "1.1.4"
+string-error = "0.1.0"
+glob = "0.3.0"
+bytesize = "1.0.0"
+rand = "0.7.0"
+natord = "1.0.9"
+snafu = "0.4.4"
+log = "0.4.8"
+env_logger = "0.6.2"
+rayon = "1.1.0"
