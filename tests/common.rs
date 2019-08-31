@@ -5,13 +5,14 @@ use std::path::PathBuf;
 pub struct DatabaseTesting {
     db: bitcask::Database,
     base_dir: std::path::PathBuf,
+
+    cleanup_on_drop: bool,
 }
 
 impl DatabaseTesting {
     pub fn new(db_name: String, max_datafile_size_bytes: u64) -> DatabaseTesting {
         std::env::set_var("RUST_TEST_THREADS", "1");
-        std::env::set_var("RUST_LOG", "bitcask");
-
+        // std::env::set_var("RUST_LOG", "bitcask");
 
         let opts = bitcask::Options {
             base_dir: std::path::PathBuf::from(format!("./data/{}", db_name)),
@@ -27,6 +28,31 @@ impl DatabaseTesting {
         DatabaseTesting {
             db: db,
             base_dir: base_dir,
+            cleanup_on_drop: true,
+        }
+    }
+
+    pub fn disable_cleanup(&mut self) {
+        self.cleanup_on_drop = false;
+    }
+
+    pub fn open(db_name: String, max_datafile_size_bytes: u64) -> DatabaseTesting {
+        std::env::set_var("RUST_TEST_THREADS", "1");
+        // std::env::set_var("RUST_LOG", "bitcask");
+
+        let opts = bitcask::Options {
+            base_dir: std::path::PathBuf::from(format!("./data/{}", db_name)),
+            data_file_limit: max_datafile_size_bytes,
+        };
+
+        let base_dir = opts.base_dir.to_owned();
+
+        let db = bitcask::new(opts).unwrap();
+
+        DatabaseTesting {
+            db: db,
+            base_dir: base_dir,
+            cleanup_on_drop: true,
         }
     }
 
@@ -81,6 +107,8 @@ impl std::ops::DerefMut for DatabaseTesting {
 
 impl Drop for DatabaseTesting {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(self.base_dir.to_string_lossy().to_string());
+        if self.cleanup_on_drop {
+            let _ = std::fs::remove_dir_all(self.base_dir.to_string_lossy().to_string());
+        }
     }
 }

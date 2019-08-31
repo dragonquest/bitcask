@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::REMOVE_TOMBSTONE;
 use crate::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DataFileMetadata {
     pub id: u128,
     pub path: std::path::PathBuf,
@@ -129,6 +129,36 @@ impl DataFile {
         let file = std::fs::File::open(&self.path).unwrap();
 
         DataFileIterator { file: file }
+    }
+
+    pub fn sync(&mut self) -> ErrorResult<()> {
+        let res = self.file.sync_all();
+        if res.is_ok() {
+            return Ok(());
+        }
+
+        Err(Box::new(res.err().unwrap()))
+    }
+
+    pub fn inspect(&mut self, with_header: bool) -> String {
+        let mut list = String::new();
+
+        if with_header {
+            list.push_str(format!("Datafile {}:\n", self.id).as_str());
+        }
+
+        for (offset, entry) in self.iter() {
+            let mut op = "S"; // Set
+
+            if entry.value == crate::config::REMOVE_TOMBSTONE {
+                op = "D" // Delete
+            }
+
+            let line = format!("{:0>8} | {: >1} | {} | {}\n", offset, op, String::from_utf8(entry.key.to_owned()).unwrap(), String::from_utf8(entry.value.to_owned()).unwrap());
+            list.push_str(line.to_owned().as_str());
+        }
+
+        list.trim_end().to_string()
     }
 }
 

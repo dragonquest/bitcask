@@ -45,7 +45,8 @@ impl KeyDir {
 
     pub fn get(&self, key: &[u8]) -> ErrorResult<KeyDirEntry> {
         if !self.entries.contains_key(key) {
-            return Err(string_error::new_err("key not found"));
+            let key_str = format!("key not found: {}", String::from_utf8(key.to_vec())?);
+            return Err(string_error::new_err(key_str.as_str()));
         }
 
         let entry = self.entries.get(key).unwrap();

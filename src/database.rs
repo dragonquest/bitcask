@@ -143,15 +143,35 @@ impl Database {
         let mut index = IndexFile::create(&index_path, false)?;
 
         let keydir = &self.keydir;
+
+        let mut num_entries_written = 0;
         for (key, entry) in keydir.iter()? {
             let value = self.read(&key)?;
 
-            let new_offset = temp_datastore.write(key, &value, entry.timestamp)?;
+            // Keys that are in the 'mutable' datafile don't need to be 
+            // written again, as it is just wasting time:
+            if self.current_data_file.id == entry.file_id {
+                continue;
+            }
 
+            let new_offset = temp_datastore.write(key, &value, entry.timestamp)?;
             index.write(key, now, new_offset, entry.timestamp)?;
+
+            num_entries_written += 1;
         }
         drop(temp_datastore);
         drop(index);
+
+        if num_entries_written == 0 {
+            // The data_files only contains duplicate entries, which already exists in the
+            // "main keyfile" therefore lets delete these duplicates/old entries:
+            for path in data_files {
+                std::fs::remove_file(path)?;
+            }
+
+            self.data_files = Vec::new();
+            return Ok(());
+        }
 
         let new_datafile_path = &base_dir.join(crate::config::data_file_format(now));
         trace!(
@@ -223,6 +243,7 @@ impl Database {
         let keydir = Arc::new(Mutex::new(&mut new_keydir));
         let data_files = Arc::new(Mutex::new(&mut new_datafiles));
 
+        trace!("Database.build_keydir: Starting to rebuild keydir now...");
         datafiles_paths.par_iter_mut().for_each({
             let keydir = Arc::clone(&keydir);
 
@@ -240,10 +261,12 @@ impl Database {
                     let mut index = IndexFile::create(&index_path.to_path_buf(), true).unwrap();
 
                     for (_, entry) in index.iter() {
-                        let mut keydir = keydir.lock().unwrap();
-                        let set_result = keydir.set(&entry.key, entry.file_id, entry.offset, entry.timestamp);
-                        if set_result.is_err() {
-                            trace!("Setting value into keydir has failed: {}", set_result.err().unwrap());
+                        {
+                            let mut keydir = keydir.lock().unwrap();
+                            let set_result = keydir.set(&entry.key, entry.file_id, entry.offset, entry.timestamp);
+                            if set_result.is_err() {
+                                trace!("Setting value into keydir has failed: {}", set_result.err().unwrap());
+                            }
                         }
 
                         counter += 1;
@@ -253,19 +276,28 @@ impl Database {
                     drop(index);
 
                 } else {
+                    trace!("Database.build_keydir: start loading datafile No={} Path={} NumRecords={}", file_id, &entry.display(), counter);
                     let mut df = DataFile::create(&entry, true).unwrap();
 
                     for (offset, record) in df.iter() {
                         let mut keydir = keydir.lock().unwrap();
 
                         if record.value == crate::config::REMOVE_TOMBSTONE {
-                            keydir.remove(&record.key).unwrap_or_default();
+                            trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}: Removing key", file_id, &entry.display(), counter);
+                            let _ignore = keydir.remove(&record.key).unwrap_or_default();
                             continue;
                         }
 
-                        let current_entry = keydir.get(&record.key).unwrap();
-                        if record.timestamp > current_entry.timestamp {
-                            keydir.set(record.key.as_slice(), file_id, offset, record.timestamp).unwrap();
+                        {
+                            let maybe_current_entry = keydir.get(&record.key);
+
+                            if let Ok(current_entry) = maybe_current_entry {
+                                if record.timestamp > current_entry.timestamp {
+                                    keydir.set(record.key.as_slice(), file_id, offset, record.timestamp).unwrap();
+                                }
+                            } else {
+                                keydir.set(record.key.as_slice(), file_id, offset, record.timestamp).unwrap();
+                            }
                         }
 
                         counter += 1;
@@ -282,6 +314,8 @@ impl Database {
                 });
             }
         });
+
+        trace!("Database.build_keydir: Finished rebuilding keydir ...");
 
         // Removing the current file as the current one is not an immutable data file yet:
         let new_datafiles = new_datafiles.into_iter().filter(|df| df.id != self.current_data_file.id).collect();
@@ -357,7 +391,7 @@ impl Database {
         self.keydir.set(&key, data_file_id, offset, timestamp)?;
 
         if offset >= self.data_file_limit {
-            trace!("Database.write: Offset threshold reached for data file id '{}': {} < {}. Switching to new data file", data_file_id, offset, self.data_file_limit);
+            trace!("Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file", data_file_id, String::from_utf8(key.to_vec())?, offset, self.data_file_limit);
             return self.switch_to_new_data_file();
         }
 
@@ -386,7 +420,24 @@ impl Database {
         self.keydir.remove(key)
     }
 
+    // get_datafile_at should only be used for debuggin:
+    pub fn get_datafile_at(&mut self, index: u32) -> DataFile {
+        let item = self.data_files.iter_mut().nth(index as usize).unwrap();
+        let df = item.clone();
+
+        DataFile::create(&df.path, true).unwrap()
+    }
+
+    pub fn get_current_datafile(&mut self) -> DataFile {
+        let path = self.current_data_file.path.as_path();
+        DataFile::create(&path, true).unwrap()
+    }
+
+    pub fn sync(&mut self) -> ErrorResult<()> {
+        self.current_data_file.sync()
+    }
+
     pub fn close(&mut self) -> ErrorResult<()> {
-        Ok(())
+        self.sync()
     }
 }
