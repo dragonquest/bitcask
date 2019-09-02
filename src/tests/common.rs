@@ -1,6 +1,6 @@
-extern crate bitcask;
-
 use std::path::PathBuf;
+
+use crate as bitcask;
 
 pub struct DatabaseTesting {
     db: bitcask::Database,

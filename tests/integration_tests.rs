@@ -1,6 +1,7 @@
 extern crate bitcask;
 
-mod common;
+use bitcask::tests::common;
+
 use bytesize::ByteSize;
 
 #[test]

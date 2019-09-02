@@ -1,7 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::io::Write;
 
 use serde::{Deserialize, Serialize};
 
@@ -103,12 +102,8 @@ impl DataFile {
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
 
-        let encoded: Vec<u8> = bincode::serialize(&entry)?;
-
-        let written = self.file.write(&encoded);
-        if let Err(err_msg) = written {
-            return Err(Box::new(err_msg));
-        }
+        let writer = std::io::BufWriter::new(&*self.file);
+        bincode::serialize_into(writer, &entry)?;
 
         Ok(offset)
     }
