@@ -9,16 +9,41 @@ use bitcask::tests::common;
 
 use bytesize::ByteSize;
 
-#[bench]
-fn sequential_writes(b: &mut Bencher) {
-    let mut db = common::DatabaseTesting::new("db.bench1".to_owned(), ByteSize::mb(50).as_u64());
+fn bench_write(b: &mut Bencher, db_name: String, bytesize: usize) {
+    let mut db = common::DatabaseTesting::new(db_name, ByteSize::mb(50).as_u64());
 
-    let val = vec![b'?'; 1024 * 1024];
+    let key = b"name".to_vec();
+    let val = vec![b'?'; bytesize];
 
     let mut n = 0;
     b.iter (|| {
-        db.write(b"name", val.as_slice()).unwrap();
+        db.write(&key, &val).unwrap();
         n += 1;
         n
     })
+}
+
+#[bench]
+fn sequential_writes_2_k(b: &mut Bencher) {
+    bench_write(b, "db.bench1".to_string(), 2048);
+}
+
+#[bench]
+fn sequential_writes_4_k(b: &mut Bencher) {
+    bench_write(b, "db.bench2".to_string(), 4096);
+}
+
+#[bench]
+fn sequential_writes_8_k(b: &mut Bencher) {
+    bench_write(b, "db.bench3".to_string(), 8192);
+}
+
+#[bench]
+fn sequential_writes_16_k(b: &mut Bencher) {
+    bench_write(b, "db.bench4".to_string(), 16384);
+}
+
+#[bench]
+fn sequential_writes_32_k(b: &mut Bencher) {
+    bench_write(b, "db.bench5".to_string(), 32768);
 }

@@ -94,6 +94,8 @@ impl DataFile {
     }
 
     pub fn write(&mut self, key: &[u8], value: &[u8], timestamp: u128) -> ErrorResult<u64> {
+        use std::io::Write;
+
         let entry = Entry {
             timestamp: timestamp,
             key: key.to_vec(),
@@ -102,8 +104,12 @@ impl DataFile {
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
 
-        let writer = std::io::BufWriter::new(&*self.file);
-        bincode::serialize_into(writer, &entry)?;
+        let encoded: Vec<u8> = bincode::serialize(&entry)?;
+
+        let written = self.file.write(&encoded);
+        if let Err(err_msg) = written {
+            return Err(Box::new(err_msg));
+        }
 
         Ok(offset)
     }
