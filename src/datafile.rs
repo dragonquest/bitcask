@@ -121,7 +121,7 @@ impl DataFile {
     pub fn read(&mut self, offset: u64) -> ErrorResult<Entry> {
         self.file.seek(SeekFrom::Start(offset))?;
 
-        let decoded: Entry = bincode::deserialize_from(&*self.file)?;
+        let decoded: Entry = bincode::deserialize_from(std::io::BufReader::new(&*self.file))?;
 
         Ok(decoded)
     }
