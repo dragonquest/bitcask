@@ -75,12 +75,7 @@ impl KeyDir {
         self.entries.keys()
     }
 
-    #[allow(dead_code)]
-    pub fn range(
-        &mut self,
-        min: &[u8],
-        max: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range(&self, min: &[u8], max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
         use std::ops::Bound::Included;
 
         let range = self
@@ -89,14 +84,23 @@ impl KeyDir {
         range
     }
 
-    #[allow(dead_code)]
-    pub fn range_from(
-        &mut self,
-        min: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
-        use std::ops::Bound::{Included, Unbounded};
+    pub fn keys_range_min(&self, min: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+        use std::ops::Bound::Included;
+        use std::ops::Bound::Unbounded;
 
-        let range = self.entries.range::<[u8], _>((Included(min), Unbounded));
+        let range = self
+            .entries
+            .range::<[u8], _>((Included(min), Unbounded));
+        range
+    }
+
+    pub fn keys_range_max(&self, max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+        use std::ops::Bound::Included;
+        use std::ops::Bound::Unbounded;
+
+        let range = self
+            .entries
+            .range::<[u8], _>((Unbounded, Included(max)));
         range
     }
 }

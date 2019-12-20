@@ -21,12 +21,25 @@ fn main() {
         db.write(key.as_bytes(), name.as_bytes()).unwrap();
     }
 
+
+    /*
+    db.keys_range(b"name:1", b"name:4").for_each(|(key, _)| {
+        println!("key: {}", String::from_utf8_lossy(key));
+    });
+    */
+
+    db.keys_range_min(b"name:999").for_each(|(key, _)| {
+        println!("key: {}", String::from_utf8_lossy(key));
+    });
+
+    /*
     db.keys()
         .cloned()
         .filter(|key| String::from_utf8_lossy(&key).ends_with("99"))
         .for_each(|key| {
             println!("key: {}", String::from_utf8_lossy(&key));
         });
+    */
 
     /*
     db.write("name".as_bytes(), "peter update".as_bytes()) .unwrap_or_default();

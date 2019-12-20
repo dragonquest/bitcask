@@ -45,12 +45,14 @@ Or also check out: 'examples/simple.rs'.
 | ```remove(&mut self, key: &[u8]) -> ErrorResult<()>```              | Removes a key from the datastore                       |
 | ```close(&mut self) -> ErrorResult<()>```                           | Close a bitcask data store and flushes all pending writes to disk |
 | ```keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry>``` | Returns iterator for all keys  |
+| ```keys_range(&self, min: &[u8], max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry>``` | Returns keys within a range (min, max) |
+| ```keys_range_min(&self, min: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry>``` | Returns keys within a range (from a min key to open ended) |
+| ```keys_range_max(&self, max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry>``` | Returns keys within a range (from start to a max key) |
 | ```stats(&self) -> Stats```                                         | Returning stats such as num keys & number of datafiles |
 | ```merge(&mut self) -> ErrorResult<()>```                           | Call to reclaim some disk space                        |
 
 # Warning
 Since this was a rust learning project and I am no expert regarding database design etc. 
 please **DO NOT USE THIS IN PRODUCTION**
-
 
 If you have any improvements, please create a Pull Request.
