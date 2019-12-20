@@ -18,3 +18,8 @@ snafu = "0.4.4"
 log = "0.4.8"
 env_logger = "0.6.2"
 rayon = "1.1.0"
+lru = "0.1.17"
+memmap = "0.7"
+
+[profile.release]
+debug = true

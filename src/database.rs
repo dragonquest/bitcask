@@ -1,5 +1,8 @@
+extern crate lru;
 extern crate env_logger;
+
 use log::*;
+use lru::LruCache;
 
 use std::fs::create_dir_all;
 use std::path::Path;
@@ -33,10 +36,12 @@ pub struct Database {
 
     // datafiles
     data_files: Vec<DataFileMetadata>,
+    data_files_cache: LruCache<u128, DataFile>,
 
     // once the active DataFile has reached the threshold
     // defined in data_file_limit, it will open a new data_file:
     data_file_limit: u64,
+
 }
 
 pub fn new(options: Options) -> ErrorResult<Database> {
@@ -70,6 +75,7 @@ pub fn new(options: Options) -> ErrorResult<Database> {
         keydir: KeyDir::new(),
         current_data_file: data_file,
         data_files: Vec::new(),
+        data_files_cache: LruCache::new(128),
         data_file_limit: options.data_file_limit,
     };
 
@@ -407,6 +413,26 @@ impl Database {
         let mut data_file = DataFile::create(&path, true)?;
         trace!("Database.read: Trying to read from offset {} from file {}", entry.offset, &path.display());
         let found_entry = data_file.read(entry.offset)?;
+
+        Ok(found_entry.value)
+    }
+
+    pub fn read_cache(&mut self, key: &[u8]) -> ErrorResult<Vec<u8>> {
+        let entry = self.keydir.get(key)?;
+
+        if let Some(df) = self.data_files_cache.get_mut(&entry.file_id) {
+            let found_entry = df.read(entry.offset)?; 
+            return Ok(found_entry.value);
+        }
+
+        let data_filename = crate::config::data_file_format(entry.file_id);
+        let path = std::path::Path::new(&self.options.base_dir).join(data_filename);
+
+        let mut data_file = DataFile::create(&path, true)?;
+        trace!("Database.read: Trying to read from offset {} from file {}", entry.offset, &path.display());
+        let found_entry = data_file.read(entry.offset)?;
+
+        let _ = self.data_files_cache.put(entry.file_id, data_file);
 
         Ok(found_entry.value)
     }

@@ -87,7 +87,8 @@ fn bench_read(b: &mut Bencher, db_name: String, bytesize: usize) {
     let mut n = 0;
     b.iter (|| {
         n += 1;
-        let _ = db.read(&key).unwrap();
+        let _ = db.read_cache(&key).unwrap();
+        // let _ = db.read(&key).unwrap();
         n
     })
 }
