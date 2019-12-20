@@ -38,15 +38,15 @@ Or also check out: 'examples/simple.rs'.
 
 | Function                                                      | Description                                            |
 |---------------------------------------------------------------|--------------------------------------------------------|
-| new(options: Options) -> ErrorResult<Database>                | Open a new or an existing bitcask file                 |
-| write(&mut self, key: &[u8], value: &[u8]) -> ErrorResult<()> | Stores a key and a value in the datastore              |
-| read(&mut self, key: &[u8]) -> ErrorResult<Vec<u8>>           | Reads a value by key from a datastore                  |
-| read_cache(&mut self, key: &[u8]) -> ErrorResult<Vec<u8>>     | Reads a value by key from a datastore (incl. caching)  |
-| remove(&mut self, key: &[u8]) -> ErrorResult<()>              | Removes a key from the datastore                       |
-| close(&mut self) -> ErrorResult<()>                           | Close a bitcask data store and flushes all pending writes to disk |
-| keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> | Returns iterator for all keys  |
-| stats(&self) -> Stats                                         | Returning stats such as num keys & number of datafiles |
-| merge(&mut self) -> ErrorResult<()>                           | Call to reclaim some disk space                        |
+| ```new(options: Options) -> ErrorResult<Database>```                | Open a new or an existing bitcask file                 |
+| ```write(&mut self, key: &[u8], value: &[u8]) -> ErrorResult<()>``` | Stores a key and a value in the datastore              |
+| ```read(&mut self, key: &[u8]) -> ErrorResult<Vec<u8>>```           | Reads a value by key from a datastore                  |
+| ```read_cache(&mut self, key: &[u8]) -> ErrorResult<Vec<u8>>```     | Reads a value by key from a datastore (incl. caching)  |
+| ```remove(&mut self, key: &[u8]) -> ErrorResult<()>```              | Removes a key from the datastore                       |
+| ```close(&mut self) -> ErrorResult<()>```                           | Close a bitcask data store and flushes all pending writes to disk |
+| ```keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry>``` | Returns iterator for all keys  |
+| ```stats(&self) -> Stats```                                         | Returning stats such as num keys & number of datafiles |
+| ```merge(&mut self) -> ErrorResult<()>```                           | Call to reclaim some disk space                        |
 
 # Warning
 Since this was a rust learning project and I am no expert regarding database design etc. 
