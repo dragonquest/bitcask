@@ -61,7 +61,6 @@ pub fn new(options: Options) -> ErrorResult<Database> {
                 &options.base_dir.display(),
                 err_msg
             )
-            .to_string(),
         ));
     }
 
@@ -211,8 +210,7 @@ impl Database {
 
         // Remove current data file since the current data file is mutable:
         entries.retain(|x| {
-            x.file_name().unwrap().to_str().unwrap()
-                != self
+            x.file_name().unwrap().to_str().unwrap() != self
                     .current_data_file
                     .path
                     .file_name()
@@ -280,7 +278,6 @@ impl Database {
                     }
 
                     trace!("Database.build_keydir: index 'index.{}' fully read. Imported index file No={} Path={} NumRecords={}", file_id, file_id, &entry.display(), counter);
-                    drop(index);
 
                 } else {
                     trace!("Database.build_keydir: start loading datafile No={} Path={} NumRecords={}", file_id, &entry.display(), counter);
@@ -325,10 +322,7 @@ impl Database {
         trace!("Database.build_keydir: Finished rebuilding keydir ...");
 
         // Removing the current file as the current one is not an immutable data file yet:
-        let new_datafiles = new_datafiles
-            .into_iter()
-            .filter(|df| df.id != self.current_data_file.id)
-            .collect();
+        new_datafiles.retain(|df| df.id != self.current_data_file.id);
 
         trace!(
             "Assigning new data files to internal struct: {:?} => {:?}",
@@ -464,8 +458,8 @@ impl Database {
 
     // get_datafile_at should only be used for debugging:
     pub fn get_datafile_at(&mut self, index: u32) -> DataFile {
-        let item = self.data_files.iter_mut().nth(index as usize).unwrap();
-        let df = item.clone();
+
+        let df = self.data_files.get_mut(index as usize).unwrap();
 
         DataFile::create(&df.path, true).unwrap()
     }
