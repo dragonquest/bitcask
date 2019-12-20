@@ -1,5 +1,5 @@
-extern crate lru;
 extern crate env_logger;
+extern crate lru;
 
 use log::*;
 use lru::LruCache;
@@ -18,6 +18,7 @@ use crate::datafile::DataFileMetadata;
 use crate::error::*;
 use crate::indexfile::IndexFile;
 use crate::keydir::KeyDir;
+use crate::keydir::KeyDirEntry;
 use crate::ErrorResult;
 
 #[derive(Clone, Debug)]
@@ -41,7 +42,6 @@ pub struct Database {
     // once the active DataFile has reached the threshold
     // defined in data_file_limit, it will open a new data_file:
     data_file_limit: u64,
-
 }
 
 pub fn new(options: Options) -> ErrorResult<Database> {
@@ -154,7 +154,7 @@ impl Database {
         for (key, entry) in keydir.iter()? {
             let value = self.read(&key)?;
 
-            // Keys that are in the 'mutable' datafile don't need to be 
+            // Keys that are in the 'mutable' datafile don't need to be
             // written again, as it is just wasting time:
             if self.current_data_file.id == entry.file_id {
                 continue;
@@ -194,7 +194,6 @@ impl Database {
             .cloned()
             .filter(|item| !data_files.contains(&item))
             .collect();
-
 
         self.build_keydir(&mut new_data_files)?;
 
@@ -239,8 +238,10 @@ impl Database {
     }
 
     fn build_keydir(&mut self, datafiles_paths: &mut Vec<PathBuf>) -> ErrorResult<()> {
-
-        trace!("rebuilding keydir now based on the files: {:?}", datafiles_paths);
+        trace!(
+            "rebuilding keydir now based on the files: {:?}",
+            datafiles_paths
+        );
 
         let mut new_keydir = KeyDir::new();
         let mut new_datafiles: Vec<DataFileMetadata> = Vec::new();
@@ -324,9 +325,16 @@ impl Database {
         trace!("Database.build_keydir: Finished rebuilding keydir ...");
 
         // Removing the current file as the current one is not an immutable data file yet:
-        let new_datafiles = new_datafiles.into_iter().filter(|df| df.id != self.current_data_file.id).collect();
+        let new_datafiles = new_datafiles
+            .into_iter()
+            .filter(|df| df.id != self.current_data_file.id)
+            .collect();
 
-        trace!("Assigning new data files to internal struct: {:?} => {:?}", &self.data_files, &new_datafiles);
+        trace!(
+            "Assigning new data files to internal struct: {:?} => {:?}",
+            &self.data_files,
+            &new_datafiles
+        );
         std::mem::replace(&mut self.data_files, new_datafiles);
         std::mem::replace(&mut self.keydir, new_keydir);
 
@@ -411,7 +419,11 @@ impl Database {
         let path = std::path::Path::new(&self.options.base_dir).join(data_filename);
 
         let mut data_file = DataFile::create(&path, true)?;
-        trace!("Database.read: Trying to read from offset {} from file {}", entry.offset, &path.display());
+        trace!(
+            "Database.read: Trying to read from offset {} from file {}",
+            entry.offset,
+            &path.display()
+        );
         let found_entry = data_file.read(entry.offset)?;
 
         Ok(found_entry.value)
@@ -421,7 +433,7 @@ impl Database {
         let entry = self.keydir.get(key)?;
 
         if let Some(df) = self.data_files_cache.get_mut(&entry.file_id) {
-            let found_entry = df.read(entry.offset)?; 
+            let found_entry = df.read(entry.offset)?;
             return Ok(found_entry.value);
         }
 
@@ -429,7 +441,11 @@ impl Database {
         let path = std::path::Path::new(&self.options.base_dir).join(data_filename);
 
         let mut data_file = DataFile::create(&path, true)?;
-        trace!("Database.read: Trying to read from offset {} from file {}", entry.offset, &path.display());
+        trace!(
+            "Database.read: Trying to read from offset {} from file {}",
+            entry.offset,
+            &path.display()
+        );
         let found_entry = data_file.read(entry.offset)?;
 
         let _ = self.data_files_cache.put(entry.file_id, data_file);
@@ -446,7 +462,7 @@ impl Database {
         self.keydir.remove(key)
     }
 
-    // get_datafile_at should only be used for debuggin:
+    // get_datafile_at should only be used for debugging:
     pub fn get_datafile_at(&mut self, index: u32) -> DataFile {
         let item = self.data_files.iter_mut().nth(index as usize).unwrap();
         let df = item.clone();
@@ -457,6 +473,10 @@ impl Database {
     pub fn get_current_datafile(&mut self) -> DataFile {
         let path = self.current_data_file.path.as_path();
         DataFile::create(&path, true).unwrap()
+    }
+
+    pub fn keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> {
+        self.keydir.keys()
     }
 
     pub fn sync(&mut self) -> ErrorResult<()> {

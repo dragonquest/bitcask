@@ -3,6 +3,10 @@ name = "bitcask"
 version = "0.1.0"
 authors = ["Andreas N. <andreasmarketingpower@gmail.com>"]
 edition = "2018"
+description = "Bitcask implementation in rust."
+license = "MIT"
+readme = "README.md"
+keywords = ["bitcask", "kv", "keyvaluestore", "storage"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -27,8 +27,13 @@ impl KeyDir {
         offset: u64,
         timestamp: u128,
     ) -> ErrorResult<()> {
-
-        log::trace!("set key={} ts={} offset={} file_id={}", String::from_utf8(key.to_vec())?, timestamp, offset, file_id);
+        log::trace!(
+            "set key={} ts={} offset={} file_id={}",
+            String::from_utf8(key.to_vec())?,
+            timestamp,
+            offset,
+            file_id
+        );
 
         // XXX: insert works as "upsert":
         self.entries.insert(
@@ -66,11 +71,8 @@ impl KeyDir {
         Ok(self.entries.iter())
     }
 
-    #[allow(dead_code)]
-    pub fn iter_mut(
-        &mut self,
-    ) -> ErrorResult<std::collections::btree_map::IterMut<Vec<u8>, KeyDirEntry>> {
-        Ok(self.entries.iter_mut())
+    pub fn keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> {
+        self.entries.keys()
     }
 
     #[allow(dead_code)]

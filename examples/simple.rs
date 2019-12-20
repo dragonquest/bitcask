@@ -14,12 +14,19 @@ fn main() {
     }
     let mut db = db.unwrap();
 
-    for n in 0..1000000 {
+    for n in 0..1000 {
         let name = format!("Peter Nr. {}", n);
         let key = format!("name:{}", n);
 
         db.write(key.as_bytes(), name.as_bytes()).unwrap();
     }
+
+    db.keys()
+        .cloned()
+        .filter(|key| String::from_utf8_lossy(&key).ends_with("99"))
+        .for_each(|key| {
+            println!("key: {}", String::from_utf8_lossy(&key));
+        });
 
     /*
     db.write("name".as_bytes(), "peter update".as_bytes()) .unwrap_or_default();

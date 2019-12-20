@@ -43,7 +43,10 @@ impl Drop for CleanFile {
         let file_metadata = std::fs::metadata(path);
         if let Ok(metadata) = file_metadata {
             if metadata.len() == 0 {
-                log::trace!("Datafile.drop: removing file since its empty {}", &path.display());
+                log::trace!(
+                    "Datafile.drop: removing file since its empty {}",
+                    &path.display()
+                );
                 let _ = std::fs::remove_file(path);
             }
         }
@@ -154,7 +157,13 @@ impl DataFile {
                 op = "D" // Delete
             }
 
-            let line = format!("{:0>8} | {: >1} | {} | {}\n", offset, op, String::from_utf8(entry.key.to_owned()).unwrap(), String::from_utf8(entry.value.to_owned()).unwrap());
+            let line = format!(
+                "{:0>8} | {: >1} | {} | {}\n",
+                offset,
+                op,
+                String::from_utf8(entry.key.to_owned()).unwrap(),
+                String::from_utf8(entry.value.to_owned()).unwrap()
+            );
             list.push_str(line.to_owned().as_str());
         }
 

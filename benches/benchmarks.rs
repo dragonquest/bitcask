@@ -34,7 +34,6 @@ fn writes_32_k(b: &mut Bencher) {
     bench_write(b, "db.bench5".to_string(), 32768);
 }
 
-
 /* Benchmarks for reads */
 #[bench]
 fn reads_2_k(b: &mut Bencher) {
@@ -61,7 +60,6 @@ fn reads_32_k(b: &mut Bencher) {
     bench_read(b, "db.bench5".to_string(), 32768);
 }
 
-
 fn bench_write(b: &mut Bencher, db_name: String, bytesize: usize) {
     let mut db = common::DatabaseTesting::new(db_name, ByteSize::mb(50).as_u64());
 
@@ -69,7 +67,7 @@ fn bench_write(b: &mut Bencher, db_name: String, bytesize: usize) {
     let val = vec![b'?'; bytesize];
 
     let mut n = 0;
-    b.iter (|| {
+    b.iter(|| {
         db.write(&key, &val).unwrap();
         n += 1;
         n
@@ -85,7 +83,7 @@ fn bench_read(b: &mut Bencher, db_name: String, bytesize: usize) {
     db.write(&key, &val).unwrap();
 
     let mut n = 0;
-    b.iter (|| {
+    b.iter(|| {
         n += 1;
         let _ = db.read_cache(&key).unwrap();
         // let _ = db.read(&key).unwrap();

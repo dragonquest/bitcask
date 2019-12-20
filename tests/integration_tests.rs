@@ -15,11 +15,17 @@ fn writing_a_key_should_return_same_value() {
 
     let stats = db.stats();
 
-    assert_eq!(0, stats.num_immutable_datafiles, "Number of immutable data files");
+    assert_eq!(
+        0, stats.num_immutable_datafiles,
+        "Number of immutable data files"
+    );
     assert_eq!(1, stats.num_keys, "Number of keys");
 
     let count_all_data_files = db.count_all_data_files();
-    assert_eq!(1, count_all_data_files, "Number of mutable + immutable data files");
+    assert_eq!(
+        1, count_all_data_files,
+        "Number of mutable + immutable data files"
+    );
 
     let count_all_indices_files = db.count_all_index_files();
     assert_eq!(0, count_all_indices_files, "Number of indices files");
@@ -38,11 +44,17 @@ fn updating_a_key_should_return_new_value() {
     let stats = db.stats();
 
     // Writing the second name 'Susi' will cause a new datafile to be written
-    assert_eq!(1, stats.num_immutable_datafiles, "Number of immutable data files");
+    assert_eq!(
+        1, stats.num_immutable_datafiles,
+        "Number of immutable data files"
+    );
     assert_eq!(1, stats.num_keys, "Number of keys");
 
     let count_all_data_files = db.count_all_data_files();
-    assert_eq!(2, count_all_data_files, "Number of mutable + immutable data files");
+    assert_eq!(
+        2, count_all_data_files,
+        "Number of mutable + immutable data files"
+    );
 
     let count_all_indices_files = db.count_all_index_files();
     assert_eq!(0, count_all_indices_files, "Number of indices files");
@@ -68,13 +80,22 @@ fn compaction_should_delete_duplicate_values() {
     let stats = db.stats();
 
     // Writing the second name 'Susi' will cause a new datafile to be written
-    assert_eq!(1, stats.num_immutable_datafiles, "Number of immutable data files");
+    assert_eq!(
+        1, stats.num_immutable_datafiles,
+        "Number of immutable data files"
+    );
     assert_eq!(1, stats.num_keys, "Number of keys");
 
     let count_all_data_files = db.count_all_data_files();
-    assert_eq!(1, count_all_data_files, "Number of mutable + immutable data files");
+    assert_eq!(
+        1, count_all_data_files,
+        "Number of mutable + immutable data files"
+    );
 
-    assert_eq!(before_size_data_files, after_size_data_files, "Writing 1 entry should be the size after compaction");
+    assert_eq!(
+        before_size_data_files, after_size_data_files,
+        "Writing 1 entry should be the size after compaction"
+    );
 
     let count_all_indices_files = db.count_all_index_files();
     assert_eq!(1, count_all_indices_files, "Number of indices files");
@@ -108,13 +129,22 @@ fn compacting_multiple_times_should_delete_duplicate_values() {
     let stats = db.stats();
 
     // Writing the second name 'Susi' will cause a new datafile to be written
-    assert_eq!(0, stats.num_immutable_datafiles, "Number of immutable data files");
+    assert_eq!(
+        0, stats.num_immutable_datafiles,
+        "Number of immutable data files"
+    );
     assert_eq!(1, stats.num_keys, "Number of keys");
 
     let count_all_data_files = db.count_all_data_files();
-    assert_eq!(1, count_all_data_files, "Number of mutable + immutable data files");
+    assert_eq!(
+        1, count_all_data_files,
+        "Number of mutable + immutable data files"
+    );
 
-    assert_eq!(before_size_data_files, after_size_data_files, "Writing 1 entry should be the size after compaction");
+    assert_eq!(
+        before_size_data_files, after_size_data_files,
+        "Writing 1 entry should be the size after compaction"
+    );
 
     let count_all_indices_files = db.count_all_index_files();
     assert_eq!(1, count_all_indices_files, "Number of indices files");
@@ -129,8 +159,16 @@ fn compacting_multiple_times_should_old_delete_duplicate_values_multiple_values(
     let mut after_size_data_files = before_size_data_files;
 
     for n in 0..10 {
-        db.write(format!("name.{}", n).as_bytes(), format!("Susi {}", n).as_bytes()).unwrap();
-        db.write(format!("name.{}", n + 1000).as_bytes(), format!("Susi {}", n).as_bytes()).unwrap();
+        db.write(
+            format!("name.{}", n).as_bytes(),
+            format!("Susi {}", n).as_bytes(),
+        )
+        .unwrap();
+        db.write(
+            format!("name.{}", n + 1000).as_bytes(),
+            format!("Susi {}", n).as_bytes(),
+        )
+        .unwrap();
 
         db.merge().unwrap();
 
@@ -140,17 +178,26 @@ fn compacting_multiple_times_should_old_delete_duplicate_values_multiple_values(
     let stats = db.stats();
 
     // Writing the second name 'Susi' will cause a new datafile to be written
-    assert_eq!(1, stats.num_immutable_datafiles, "Number of immutable data files");
+    assert_eq!(
+        1, stats.num_immutable_datafiles,
+        "Number of immutable data files"
+    );
     assert_eq!(21, stats.num_keys, "Number of keys"); // name + name.0-20 + name.(0-20)+1000
 
     let count_all_data_files = db.count_all_data_files();
-    assert_eq!(2, count_all_data_files, "Number of mutable + immutable data files");
+    assert_eq!(
+        2, count_all_data_files,
+        "Number of mutable + immutable data files"
+    );
 
-    assert_eq!(true, (before_size_data_files < after_size_data_files), "the new compacted data file should not be null");
+    assert_eq!(
+        true,
+        (before_size_data_files < after_size_data_files),
+        "the new compacted data file should not be null"
+    );
 
     let count_all_indices_files = db.count_all_index_files();
     assert_eq!(1, count_all_indices_files, "Number of indices files");
-
 
     // Reading the files back again should work
     for n in 0..10 {
@@ -214,13 +261,23 @@ fn append_only_log_should_also_write_deletes() {
 
     let stats = db.stats();
 
-    assert_eq!(1, stats.num_immutable_datafiles, "Number of immutable data files");
+    assert_eq!(
+        1, stats.num_immutable_datafiles,
+        "Number of immutable data files"
+    );
     assert_eq!(0, stats.num_keys, "Number of keys");
 
     let count_all_data_files = db.count_all_data_files();
-    assert_eq!(2, count_all_data_files, "Number of mutable + immutable data files");
+    assert_eq!(
+        2, count_all_data_files,
+        "Number of mutable + immutable data files"
+    );
 
-    assert_eq!(true, (before_size_data_files < after_size_data_files), "after deleting, the file gets bigger (due to append only system)");
+    assert_eq!(
+        true,
+        (before_size_data_files < after_size_data_files),
+        "after deleting, the file gets bigger (due to append only system)"
+    );
 
     let count_all_indices_files = db.count_all_index_files();
     assert_eq!(0, count_all_indices_files, "Number of indices files");
@@ -241,14 +298,16 @@ fn append_only_log_should_also_write_deletes() {
     db.remove(b"name").unwrap();
 
     // After compaction:
-    db.merge().unwrap(); 
+    db.merge().unwrap();
 
     // current entry still has the 'REMOVED' tombstone,
     // because we didn't rewrite that yet (it's still "active"):
     let mut db1 = db.get_current_datafile();
-    assert_eq!("00000000 | D | name | %_%_%_%<!(R|E|M|O|V|E|D)!>%_%_%_%_", db1.inspect(false));
+    assert_eq!(
+        "00000000 | D | name | %_%_%_%<!(R|E|M|O|V|E|D)!>%_%_%_%_",
+        db1.inspect(false)
+    );
     // println!(">>> {}", db1.inspect(true));
-
 
     // lets trigger only writes now. Checking if the db works correctly after some removals:
     db.write(b"name1", b"Peter").unwrap();
@@ -258,7 +317,7 @@ fn append_only_log_should_also_write_deletes() {
     db.write(b"name5", b"Peter").unwrap();
 
     // After compaction:
-    db.merge().unwrap(); 
+    db.merge().unwrap();
 
     db.write(b"test", b"123").unwrap();
 

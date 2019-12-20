@@ -6,7 +6,6 @@ mod indexfile;
 mod keydir;
 mod utils;
 
-
 pub use database::Database;
 pub use database::Options;
 
