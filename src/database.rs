@@ -447,10 +447,7 @@ impl Database {
     }
 
     pub fn remove(&mut self, key: &[u8]) -> ErrorResult<()> {
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-
+        let timestamp = crate::utils::time();
         self.current_data_file.remove(key, timestamp)?;
         self.keydir.remove(key)
     }
