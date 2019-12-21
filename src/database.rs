@@ -55,13 +55,11 @@ pub fn new(options: Options) -> ErrorResult<Database> {
 
     let created_dir = create_dir_all(&options.base_dir.as_path());
     if let Err(err_msg) = created_dir {
-        return Err(new_err(
-            &format!(
-                "Failed to create '{}': {}",
-                &options.base_dir.display(),
-                err_msg
-            )
-        ));
+        return Err(new_err(&format!(
+            "Failed to create '{}': {}",
+            &options.base_dir.display(),
+            err_msg
+        )));
     }
 
     let path = std::path::Path::new(&options.base_dir);
@@ -210,7 +208,8 @@ impl Database {
 
         // Remove current data file since the current data file is mutable:
         entries.retain(|x| {
-            x.file_name().unwrap().to_str().unwrap() != self
+            x.file_name().unwrap().to_str().unwrap()
+                != self
                     .current_data_file
                     .path
                     .file_name()
@@ -458,7 +457,6 @@ impl Database {
 
     // get_datafile_at should only be used for debugging:
     pub fn get_datafile_at(&mut self, index: u32) -> DataFile {
-
         let df = self.data_files.get_mut(index as usize).unwrap();
 
         DataFile::create(&df.path, true).unwrap()
@@ -473,15 +471,25 @@ impl Database {
         self.keydir.keys()
     }
 
-    pub fn keys_range(&self, min: &[u8], max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range(
+        &self,
+        min: &[u8],
+        max: &[u8],
+    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
         self.keydir.keys_range(min, max)
     }
 
-    pub fn keys_range_min(&self, min: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_min(
+        &self,
+        min: &[u8],
+    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
         self.keydir.keys_range_min(min)
     }
 
-    pub fn keys_range_max(&self, max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_max(
+        &self,
+        max: &[u8],
+    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
         self.keydir.keys_range_max(max)
     }
 

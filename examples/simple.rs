@@ -21,7 +21,6 @@ fn main() {
         db.write(key.as_bytes(), name.as_bytes()).unwrap();
     }
 
-
     /*
     db.keys_range(b"name:1", b"name:4").for_each(|(key, _)| {
         println!("key: {}", String::from_utf8_lossy(key));
