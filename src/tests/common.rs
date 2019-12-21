@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 pub struct DatabaseTesting {
-    db: bitcask::Database,
+    db: crate::Database,
     base_dir: std::path::PathBuf,
 
     cleanup_on_drop: bool,
@@ -12,7 +12,7 @@ impl DatabaseTesting {
         std::env::set_var("RUST_TEST_THREADS", "1");
         // std::env::set_var("RUST_LOG", "bitcask");
 
-        let opts = bitcask::Options {
+        let opts = crate::Options {
             base_dir: std::path::PathBuf::from(format!("./data/{}", db_name)),
             data_file_limit: max_datafile_size_bytes,
         };
@@ -21,7 +21,7 @@ impl DatabaseTesting {
 
         let base_dir = opts.base_dir.to_owned();
 
-        let db = bitcask::new(opts).unwrap();
+        let db = crate::new(opts).unwrap();
 
         DatabaseTesting {
             db,
@@ -38,14 +38,14 @@ impl DatabaseTesting {
         std::env::set_var("RUST_TEST_THREADS", "1");
         // std::env::set_var("RUST_LOG", "bitcask");
 
-        let opts = bitcask::Options {
+        let opts = crate::Options {
             base_dir: std::path::PathBuf::from(format!("./data/{}", db_name)),
             data_file_limit: max_datafile_size_bytes,
         };
 
         let base_dir = opts.base_dir.to_owned();
 
-        let db = bitcask::new(opts).unwrap();
+        let db = crate::new(opts).unwrap();
 
         DatabaseTesting {
             db,
@@ -90,7 +90,7 @@ impl DatabaseTesting {
 }
 
 impl std::ops::Deref for DatabaseTesting {
-    type Target = bitcask::Database;
+    type Target = crate::Database;
 
     fn deref(&self) -> &Self::Target {
         &self.db
