@@ -9,15 +9,14 @@ pub struct KeyDirEntry {
     pub timestamp: u128,
 }
 
+#[derive(Default)]
 pub struct KeyDir {
     entries: BTreeMap<Vec<u8>, KeyDirEntry>,
 }
 
 impl KeyDir {
     pub fn new() -> KeyDir {
-        KeyDir {
-            entries: BTreeMap::new(),
-        }
+        Self::default()
     }
 
     pub fn set(
