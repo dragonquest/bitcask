@@ -45,7 +45,7 @@ impl Drop for CleanFile {
             if metadata.len() == 0 {
                 log::trace!(
                     "Datafile.drop: removing file since its empty {}",
-                    &path.display()
+                    path.display()
                 );
                 let _ = std::fs::remove_file(path);
             }
@@ -95,8 +95,6 @@ impl DataFile {
     }
 
     pub fn write(&mut self, key: &[u8], value: &[u8], timestamp: u128) -> ErrorResult<u64> {
-        use std::io::Write;
-
         let entry = Entry {
             timestamp,
             key: key.to_vec(),
@@ -104,14 +102,7 @@ impl DataFile {
         };
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
-
-        let encoded: Vec<u8> = bincode::serialize(&entry)?;
-
-        let written = self.file.write(&encoded);
-        if let Err(err_msg) = written {
-            return Err(Box::new(err_msg));
-        }
-
+        bincode::serialize_into(&mut *self.file, &entry)?;
         Ok(offset)
     }
 
@@ -122,7 +113,6 @@ impl DataFile {
     pub fn read(&mut self, offset: u64) -> ErrorResult<Entry> {
         let mmap = unsafe { memmap::MmapOptions::new().map(&self.file)? };
         let decoded: Entry = bincode::deserialize(&mmap[(offset as usize)..])?;
-
         Ok(decoded)
     }
 
@@ -133,12 +123,7 @@ impl DataFile {
     }
 
     pub fn sync(&mut self) -> ErrorResult<()> {
-        let res = self.file.sync_all();
-        if res.is_ok() {
-            return Ok(());
-        }
-
-        Err(Box::new(res.err().unwrap()))
+        self.file.sync_all().map_err(Into::into)
     }
 
     pub fn inspect(&mut self, with_header: bool) -> String {
@@ -159,10 +144,10 @@ impl DataFile {
                 "{:0>8} | {: >1} | {} | {}\n",
                 offset,
                 op,
-                String::from_utf8(entry.key.to_owned()).unwrap(),
-                String::from_utf8(entry.value.to_owned()).unwrap()
+                std::str::from_utf8(&entry.key).unwrap(),
+                std::str::from_utf8(&entry.value).unwrap()
             );
-            list.push_str(line.to_owned().as_str());
+            list.push_str(&line);
         }
 
         list.trim_end().to_string()
