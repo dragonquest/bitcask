@@ -92,7 +92,7 @@ impl Database {
 
         Stats {
             num_immutable_datafiles: (self.data_files.len() as u64),
-            num_keys: (self.keydir.iter().unwrap().count() as u64),
+            num_keys: (self.keydir.iter().count() as u64),
         }
     }
 
@@ -148,7 +148,7 @@ impl Database {
         let keydir = &self.keydir;
 
         let mut num_entries_written = 0;
-        for (key, entry) in keydir.iter()? {
+        for (key, entry) in keydir.iter() {
             let value = self.read(&key)?;
 
             // Keys that are in the 'mutable' datafile don't need to be

@@ -64,9 +64,8 @@ impl KeyDir {
         Ok(())
     }
 
-    // TODO this result is never made
-    pub fn iter(&self) -> ErrorResult<std::collections::btree_map::Iter<Vec<u8>, KeyDirEntry>> {
-        Ok(self.entries.iter())
+    pub fn iter(&self) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
+        self.entries.iter()
     }
 
     pub fn keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> {
