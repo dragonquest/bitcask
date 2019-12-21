@@ -240,16 +240,16 @@ impl Database {
             datafiles_paths
         );
 
-        let mut new_keydir = KeyDir::new();
-        let mut new_datafiles: Vec<DataFileMetadata> = Vec::new();
         let base_dir = self.options.base_dir.to_owned();
 
-        let keydir = Arc::new(Mutex::new(&mut new_keydir));
-        let data_files = Arc::new(Mutex::new(&mut new_datafiles));
+        // take ownership of these
+        let keydir = Arc::new(Mutex::new(KeyDir::new()));
+        let data_files = Arc::new(Mutex::new(Vec::new()));
 
         trace!("Database.build_keydir: Starting to rebuild keydir now...");
         datafiles_paths.par_iter_mut().for_each({
             let keydir = Arc::clone(&keydir);
+            let data_files = Arc::clone(&data_files);
 
             move |entry| {
                 let mut counter = 0;
@@ -320,16 +320,32 @@ impl Database {
 
         trace!("Database.build_keydir: Finished rebuilding keydir ...");
 
+        // take ownership of the arc wrapped value
+        // this shouldn't fail because rayon blocks until its done
+        // try_unwrap gets the value out of the Arc if there aren't any extra refs to it
+        let mut data_files = Arc::try_unwrap(data_files)
+            .ok() // ignore error value
+            // get the value out of the mutex
+            // into_inner gets the value out of the mutex if its not locked
+            .and_then(|mutex| mutex.into_inner().ok())
+            .expect("rayon to finish");
+
+        let keydir = Arc::try_unwrap(keydir)
+            .ok() // ignore error value
+            // get the value out of the mutex
+            .and_then(|mutex| mutex.into_inner().ok())
+            .expect("rayon to finish");
+
         // Removing the current file as the current one is not an immutable data file yet:
-        new_datafiles.retain(|df| df.id != self.current_data_file.id);
+        data_files.retain(|df| df.id != self.current_data_file.id);
 
         trace!(
             "Assigning new data files to internal struct: {:?} => {:?}",
             &self.data_files,
-            &new_datafiles
+            &data_files
         );
-        std::mem::replace(&mut self.data_files, new_datafiles);
-        std::mem::replace(&mut self.keydir, new_keydir);
+        std::mem::replace(&mut self.data_files, data_files);
+        std::mem::replace(&mut self.keydir, keydir);
 
         self.cleanup()?;
 
