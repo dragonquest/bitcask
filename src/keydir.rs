@@ -84,16 +84,12 @@ impl KeyDir {
     }
 
     pub fn keys_range_min(&self, min: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
-        use std::ops::Bound::Included;
-        use std::ops::Bound::Unbounded;
-
+        use std::ops::Bound::{Included, Unbounded};
         self.entries.range::<[u8], _>((Included(min), Unbounded))
     }
 
     pub fn keys_range_max(&self, max: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
-        use std::ops::Bound::Included;
-        use std::ops::Bound::Unbounded;
-
+        use std::ops::Bound::{Included, Unbounded};
         self.entries.range::<[u8], _>((Unbounded, Included(max)))
     }
 }
