@@ -344,8 +344,8 @@ impl Database {
             &self.data_files,
             &data_files
         );
-        std::mem::replace(&mut self.data_files, data_files);
-        std::mem::replace(&mut self.keydir, keydir);
+        self.data_files = data_files;
+        self.keydir = keydir;
 
         self.cleanup()?;
 
