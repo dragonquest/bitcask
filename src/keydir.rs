@@ -28,7 +28,7 @@ impl KeyDir {
     ) -> ErrorResult<()> {
         log::trace!(
             "set key={} ts={} offset={} file_id={}",
-            String::from_utf8(key.to_vec())?,
+            std::str::from_utf8(key)?,
             timestamp,
             offset,
             file_id
