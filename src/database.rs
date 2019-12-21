@@ -467,7 +467,7 @@ impl Database {
         DataFile::create(&path, true).unwrap()
     }
 
-    pub fn keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> {
+    pub fn keys(&self) -> impl Iterator<Item = &Vec<u8>> {
         self.keydir.keys()
     }
 

@@ -68,7 +68,7 @@ impl KeyDir {
         self.entries.iter()
     }
 
-    pub fn keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> {
+    pub fn keys(&self) -> impl Iterator<Item = &Vec<u8>> {
         self.entries.keys()
     }
 
