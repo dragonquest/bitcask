@@ -80,12 +80,12 @@ impl DataFile {
         let id = crate::utils::extract_id_from_filename(&path.to_path_buf())?;
 
         let df = DataFile {
-            id: id,
+            id,
             file: CleanFile {
                 file: Some(datafile),
                 path: path.to_path_buf(),
             },
-            is_readonly: is_readonly,
+            is_readonly,
             path: path.to_path_buf(),
         };
 
@@ -100,7 +100,7 @@ impl DataFile {
         use std::io::Write;
 
         let entry = Entry {
-            timestamp: timestamp,
+            timestamp,
             key: key.to_vec(),
             value: value.to_vec(),
         };
@@ -131,7 +131,7 @@ impl DataFile {
     pub fn iter(&mut self) -> DataFileIterator {
         let file = std::fs::File::open(&self.path).unwrap();
 
-        DataFileIterator { file: file }
+        DataFileIterator { file }
     }
 
     pub fn sync(&mut self) -> ErrorResult<()> {

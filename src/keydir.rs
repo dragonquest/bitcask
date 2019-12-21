@@ -39,9 +39,9 @@ impl KeyDir {
         self.entries.insert(
             key.to_vec(),
             KeyDirEntry {
-                file_id: file_id,
-                offset: offset,
-                timestamp: timestamp,
+                file_id,
+                offset,
+                timestamp,
             },
         );
 

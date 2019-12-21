@@ -103,7 +103,7 @@ impl Database {
         self.build_keydir(&mut data_files_sorted)
             .map_err(|source| Error::KeyDirFill {
                 path: base_dir.to_path_buf(),
-                source: source,
+                source,
             })?;
 
         self.cleanup()?;
@@ -218,7 +218,7 @@ impl Database {
                     .unwrap()
         });
 
-        return Ok(entries);
+        Ok(entries)
     }
 
     fn glob_files(&self, base_dir: &Path, pattern: &'static str) -> ErrorResult<Vec<PathBuf>> {
@@ -231,7 +231,7 @@ impl Database {
         let mut entries: Vec<PathBuf> = glob_result?.map(|x| x.unwrap()).collect();
 
         entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
-        return Ok(entries);
+        Ok(entries)
     }
 
     fn build_keydir(&mut self, datafiles_paths: &mut Vec<PathBuf>) -> ErrorResult<()> {
@@ -311,10 +311,10 @@ impl Database {
 
 
                 let mut data_files = data_files.lock().unwrap();
-                &data_files.push(DataFileMetadata {
+                data_files.push(DataFileMetadata {
                     id: file_id,
                     path: entry.to_path_buf(),
-                });
+                })
             }
         });
 

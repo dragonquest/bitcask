@@ -34,9 +34,9 @@ impl IndexFile {
         let id = crate::utils::extract_id_from_filename(&path.to_path_buf())?;
 
         let idxfile = IndexFile {
-            id: id,
+            id,
             file: indexfile,
-            is_readonly: is_readonly,
+            is_readonly,
             path: path.to_path_buf(),
         };
 
@@ -56,9 +56,9 @@ impl IndexFile {
     ) -> ErrorResult<u64> {
         let entry = IndexEntry {
             key: key.to_vec(),
-            file_id: file_id,
-            offset: offset,
-            timestamp: timestamp,
+            file_id,
+            offset,
+            timestamp,
         };
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
@@ -85,7 +85,7 @@ impl IndexFile {
     pub fn iter(&mut self) -> IndexFileIterator {
         let file = std::fs::File::open(&self.path).unwrap();
 
-        IndexFileIterator { file: file }
+        IndexFileIterator { file }
     }
 }
 

@@ -24,8 +24,8 @@ impl DatabaseTesting {
         let db = bitcask::new(opts).unwrap();
 
         DatabaseTesting {
-            db: db,
-            base_dir: base_dir,
+            db,
+            base_dir,
             cleanup_on_drop: true,
         }
     }
