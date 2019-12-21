@@ -380,7 +380,7 @@ impl Database {
 
         trace!(
             "Database.switch_to_new_data_file: New data file is {} (file_id={})",
-            &new_path.display(),
+            new_path.display(),
             data_file_id
         );
 
@@ -390,7 +390,7 @@ impl Database {
         let data_file_id = self.current_data_file.get_id();
         trace!(
             "Database.switch_to_new_data_file: Switched data file. Old_Id={} New_Id={}",
-            &old_data_file.get_id(),
+            old_data_file.get_id(),
             data_file_id
         );
 
@@ -412,7 +412,12 @@ impl Database {
         self.keydir.set(&key, data_file_id, offset, timestamp)?;
 
         if offset >= self.data_file_limit {
-            trace!("Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file", data_file_id, String::from_utf8(key.to_vec())?, offset, self.data_file_limit);
+            trace!("Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file", 
+                data_file_id, 
+                std::str::from_utf8(&key)?, 
+                offset, 
+                self.data_file_limit
+            );
             return self.switch_to_new_data_file();
         }
 
