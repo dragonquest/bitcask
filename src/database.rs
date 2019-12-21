@@ -204,7 +204,7 @@ impl Database {
     fn get_data_files_except_current(&self, base_dir: &Path) -> ErrorResult<Vec<PathBuf>> {
         let mut entries = self.glob_files(&base_dir, crate::config::DATA_FILE_GLOB_FORMAT)?;
 
-        entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
+        entries.sort_by(|a, b| natord::compare(a.to_str().unwrap(), b.to_str().unwrap()));
 
         // Remove current data file since the current data file is mutable:
         entries.retain(|x| {
@@ -230,7 +230,7 @@ impl Database {
 
         let mut entries: Vec<PathBuf> = glob_result?.map(|x| x.unwrap()).collect();
 
-        entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
+        entries.sort_by(|a, b| natord::compare(a.to_str().unwrap(), b.to_str().unwrap()));
         Ok(entries)
     }
 
@@ -268,25 +268,25 @@ impl Database {
                         {
                             let mut keydir = keydir.lock().unwrap();
                             let set_result = keydir.set(&entry.key, entry.file_id, entry.offset, entry.timestamp);
-                            if set_result.is_err() {
-                                trace!("Setting value into keydir has failed: {}", set_result.err().unwrap());
+                            if let Err(err) = set_result {
+                                trace!("Setting value into keydir has failed: {}", err);
                             }
                         }
 
                         counter += 1;
                     }
 
-                    trace!("Database.build_keydir: index 'index.{}' fully read. Imported index file No={} Path={} NumRecords={}", file_id, file_id, &entry.display(), counter);
+                    trace!("Database.build_keydir: index 'index.{}' fully read. Imported index file No={} Path={} NumRecords={}", file_id, file_id, entry.display(), counter);
 
                 } else {
-                    trace!("Database.build_keydir: start loading datafile No={} Path={} NumRecords={}", file_id, &entry.display(), counter);
+                    trace!("Database.build_keydir: start loading datafile No={} Path={} NumRecords={}", file_id, entry.display(), counter);
                     let mut df = DataFile::create(&entry, true).unwrap();
 
                     for (offset, record) in df.iter() {
                         let mut keydir = keydir.lock().unwrap();
 
                         if record.value == crate::config::REMOVE_TOMBSTONE {
-                            trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}: Removing key", file_id, &entry.display(), counter);
+                            trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}: Removing key", file_id, entry.display(), counter);
                             keydir.remove(&record.key).unwrap_or_default();
                             continue;
                         }
@@ -306,7 +306,7 @@ impl Database {
                         counter += 1;
                     }
 
-                    trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}", file_id, &entry.display(), counter);
+                    trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}", file_id, entry.display(), counter);
                 }
 
 
@@ -341,8 +341,8 @@ impl Database {
 
         trace!(
             "Assigning new data files to internal struct: {:?} => {:?}",
-            &self.data_files,
-            &data_files
+            self.data_files,
+            data_files
         );
         self.data_files = data_files;
         self.keydir = keydir;
@@ -365,7 +365,12 @@ impl Database {
             // cleaning up old files with 0 bytes size:
             let info = std::fs::metadata(&entry)?;
             if info.len() == 0 && std::fs::remove_file(&entry).is_ok() {
-                trace!("... removing {} since it is zero bytes and its not the current data file id (this: {}, current: {})", entry.display(), file_id, &self.current_data_file.get_id());
+                trace!(
+                    "... removing {} since it is zero bytes and its not the current data file id (this: {}, current: {})",
+                    entry.display(),
+                    file_id,
+                    self.current_data_file.get_id()
+                );
             }
         }
 
@@ -412,10 +417,11 @@ impl Database {
         self.keydir.set(&key, data_file_id, offset, timestamp)?;
 
         if offset >= self.data_file_limit {
-            trace!("Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file", 
-                data_file_id, 
-                std::str::from_utf8(&key)?, 
-                offset, 
+            trace!(
+                "Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file",
+                data_file_id,
+                std::str::from_utf8(&key)?,
+                offset,
                 self.data_file_limit
             );
             return self.switch_to_new_data_file();
@@ -434,10 +440,10 @@ impl Database {
         trace!(
             "Database.read: Trying to read from offset {} from file {}",
             entry.offset,
-            &path.display()
+            path.display()
         );
-        let found_entry = data_file.read(entry.offset)?;
 
+        let found_entry = data_file.read(entry.offset)?;
         Ok(found_entry.value)
     }
 
@@ -456,12 +462,10 @@ impl Database {
         trace!(
             "Database.read: Trying to read from offset {} from file {}",
             entry.offset,
-            &path.display()
+            path.display()
         );
         let found_entry = data_file.read(entry.offset)?;
-
         let _ = self.data_files_cache.put(entry.file_id, data_file);
-
         Ok(found_entry.value)
     }
 
@@ -474,7 +478,6 @@ impl Database {
     // get_datafile_at should only be used for debugging:
     pub fn get_datafile_at(&mut self, index: u32) -> DataFile {
         let df = self.data_files.get_mut(index as usize).unwrap();
-
         DataFile::create(&df.path, true).unwrap()
     }
 
