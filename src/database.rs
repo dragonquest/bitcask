@@ -475,21 +475,15 @@ impl Database {
         &self,
         min: &[u8],
         max: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    ) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         self.keydir.keys_range(min, max)
     }
 
-    pub fn keys_range_min(
-        &self,
-        min: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_min(&self, min: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         self.keydir.keys_range_min(min)
     }
 
-    pub fn keys_range_max(
-        &self,
-        max: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_max(&self, max: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         self.keydir.keys_range_max(max)
     }
 

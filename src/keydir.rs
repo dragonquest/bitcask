@@ -76,27 +76,21 @@ impl KeyDir {
         &self,
         min: &[u8],
         max: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    ) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         use std::ops::Bound::Included;
 
         self.entries
             .range::<[u8], _>((Included(min), Included(max)))
     }
 
-    pub fn keys_range_min(
-        &self,
-        min: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_min(&self, min: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         use std::ops::Bound::Included;
         use std::ops::Bound::Unbounded;
 
         self.entries.range::<[u8], _>((Included(min), Unbounded))
     }
 
-    pub fn keys_range_max(
-        &self,
-        max: &[u8],
-    ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_max(&self, max: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         use std::ops::Bound::Included;
         use std::ops::Bound::Unbounded;
 
