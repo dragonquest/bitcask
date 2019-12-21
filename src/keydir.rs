@@ -51,7 +51,7 @@ impl KeyDir {
     pub fn get(&self, key: &[u8]) -> ErrorResult<KeyDirEntry> {
         // TODO this can just be an ok_or_else
         if !self.entries.contains_key(key) {
-            let key_str = format!("key not found: {}", String::from_utf8(key.to_vec())?);
+            let key_str = format!("key not found: {}", std::str::from_utf8(key)?);
             return Err(string_error::new_err(key_str.as_str()));
         }
         let entry = self.entries.get(key).cloned().unwrap();
