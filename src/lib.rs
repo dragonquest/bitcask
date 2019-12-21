@@ -12,8 +12,6 @@ pub use database::Options;
 pub use database::new;
 pub use database::*;
 
-pub mod tests;
-
 pub type ErrorResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 /*

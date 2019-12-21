@@ -1,8 +1,7 @@
 extern crate bitcask;
-
-use bitcask::tests::common;
-
 use bytesize::ByteSize;
+
+mod common;
 
 #[test]
 fn writing_a_key_should_return_same_value() {

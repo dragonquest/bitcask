@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use crate as bitcask;
-
 pub struct DatabaseTesting {
     db: bitcask::Database,
     base_dir: std::path::PathBuf,
