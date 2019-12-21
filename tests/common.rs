@@ -48,8 +48,8 @@ impl DatabaseTesting {
         let db = bitcask::new(opts).unwrap();
 
         DatabaseTesting {
-            db: db,
-            base_dir: base_dir,
+            db,
+            base_dir,
             cleanup_on_drop: true,
         }
     }
@@ -85,7 +85,7 @@ impl DatabaseTesting {
         let mut entries: Vec<PathBuf> = glob_result.map(|x| x.unwrap()).collect();
 
         entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
-        return entries;
+        entries
     }
 }
 

@@ -7,10 +7,10 @@ mod common;
 fn writing_a_key_should_return_same_value() {
     let mut db = common::DatabaseTesting::new("db1".to_owned(), ByteSize::b(1).as_u64());
 
-    db.write("name".as_bytes(), "Peter".as_bytes()).unwrap();
+    db.write(b"name", b"Peter").unwrap();
 
-    let data = db.read("name".as_bytes()).unwrap();
-    assert_eq!("Peter".as_bytes().to_vec(), data);
+    let data = db.read(b"name").unwrap();
+    assert_eq!(b"Peter".to_vec(), data);
 
     let stats = db.stats();
 
@@ -34,11 +34,11 @@ fn writing_a_key_should_return_same_value() {
 fn updating_a_key_should_return_new_value() {
     let mut db = common::DatabaseTesting::new("db2".to_owned(), ByteSize::b(1).as_u64());
 
-    db.write("name".as_bytes(), "Peter".as_bytes()).unwrap();
-    db.write("name".as_bytes(), "Susi".as_bytes()).unwrap();
+    db.write(b"name", b"Peter").unwrap();
+    db.write(b"name", b"Susi").unwrap();
 
-    let data = db.read("name".as_bytes()).unwrap();
-    assert_eq!("Susi".as_bytes().to_vec(), data);
+    let data = db.read(b"name").unwrap();
+    assert_eq!(b"Susi".to_vec(), data);
 
     let stats = db.stats();
 

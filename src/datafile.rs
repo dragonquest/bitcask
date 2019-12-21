@@ -64,18 +64,16 @@ pub struct DataFile {
 
 impl DataFile {
     pub fn create(path: &std::path::Path, is_readonly: bool) -> ErrorResult<DataFile> {
-        let datafile: std::fs::File;
-
-        if is_readonly {
-            datafile = OpenOptions::new().read(true).open(&path)?;
+        let datafile = if is_readonly {
+            OpenOptions::new().read(true).open(&path)?
         } else {
-            datafile = OpenOptions::new()
+            OpenOptions::new()
                 .read(true)
                 .append(true)
                 .write(true)
                 .create(true)
-                .open(&path)?;
-        }
+                .open(&path)?
+        };
 
         let id = crate::utils::extract_id_from_filename(&path.to_path_buf())?;
 
@@ -180,13 +178,8 @@ impl Iterator for DataFileIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let offset = self.file.seek(SeekFrom::Current(0)).unwrap();
-
         let decoded_maybe = bincode::deserialize_from(&self.file);
-        if let Err(_) = decoded_maybe {
-            return None;
-        }
-
-        Some((offset, decoded_maybe.unwrap()))
+        Some((offset, decoded_maybe.ok()?))
     }
 }
 

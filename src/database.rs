@@ -262,7 +262,7 @@ impl Database {
                 if index_path.exists() {
                     trace!("Database.build_keydir: index found 'index.{}'. Importing data file No={} Path={} ...", file_id, file_id, &entry.display());
 
-                    let mut index = IndexFile::create(&index_path.to_path_buf(), true).unwrap();
+                    let mut index = IndexFile::create(&index_path, true).unwrap();
 
                     for (_, entry) in index.iter() {
                         {
@@ -287,7 +287,7 @@ impl Database {
 
                         if record.value == crate::config::REMOVE_TOMBSTONE {
                             trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}: Removing key", file_id, &entry.display(), counter);
-                            let _ignore = keydir.remove(&record.key).unwrap_or_default();
+                            keydir.remove(&record.key).unwrap_or_default();
                             continue;
                         }
 

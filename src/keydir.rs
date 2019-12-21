@@ -48,25 +48,24 @@ impl KeyDir {
         Ok(())
     }
 
+    // TODO this should probably return a reference to the KeyDirEntry
     pub fn get(&self, key: &[u8]) -> ErrorResult<KeyDirEntry> {
+        // TODO this can just be an ok_or_else
         if !self.entries.contains_key(key) {
             let key_str = format!("key not found: {}", String::from_utf8(key.to_vec())?);
             return Err(string_error::new_err(key_str.as_str()));
         }
-
-        let entry = self.entries.get(key).unwrap();
-
-        let entry = entry.clone();
-
+        let entry = self.entries.get(key).cloned().unwrap();
         Ok(entry)
     }
 
+    // TODO this result is never made
     pub fn remove(&mut self, key: &[u8]) -> ErrorResult<()> {
         self.entries.remove(&key.to_vec());
-
         Ok(())
     }
 
+    // TODO this result is never made
     pub fn iter(&self) -> ErrorResult<std::collections::btree_map::Iter<Vec<u8>, KeyDirEntry>> {
         Ok(self.entries.iter())
     }
@@ -82,10 +81,8 @@ impl KeyDir {
     ) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
         use std::ops::Bound::Included;
 
-        let range = self
-            .entries
-            .range::<[u8], _>((Included(min), Included(max)));
-        range
+        self.entries
+            .range::<[u8], _>((Included(min), Included(max)))
     }
 
     pub fn keys_range_min(
@@ -95,8 +92,7 @@ impl KeyDir {
         use std::ops::Bound::Included;
         use std::ops::Bound::Unbounded;
 
-        let range = self.entries.range::<[u8], _>((Included(min), Unbounded));
-        range
+        self.entries.range::<[u8], _>((Included(min), Unbounded))
     }
 
     pub fn keys_range_max(
@@ -106,7 +102,6 @@ impl KeyDir {
         use std::ops::Bound::Included;
         use std::ops::Bound::Unbounded;
 
-        let range = self.entries.range::<[u8], _>((Unbounded, Included(max)));
-        range
+        self.entries.range::<[u8], _>((Unbounded, Included(max)))
     }
 }

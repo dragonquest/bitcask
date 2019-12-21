@@ -1,9 +1,8 @@
 pub fn time() -> u128 {
-    let ts = std::time::SystemTime::now()
+    std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_nanos();
-    ts
+        .as_nanos()
 }
 
 pub fn extract_id_from_filename(
