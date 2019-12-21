@@ -358,16 +358,14 @@ impl Database {
 
         for entry in entries {
             let file_id = crate::utils::extract_id_from_filename(&entry)?;
+            if self.current_data_file.get_id() == file_id {
+                continue;
+            }
 
             // cleaning up old files with 0 bytes size:
-            if self.current_data_file.get_id() != file_id {
-                let info = std::fs::metadata(&entry).unwrap();
-                if info.len() == 0 {
-                    let remove = std::fs::remove_file(Path::new(&entry));
-                    if remove.is_ok() {
-                        trace!("... removing {} since it is zero bytes and its not the current data file id (this: {}, current: {})", &entry.to_str().unwrap(), file_id, &self.current_data_file.get_id());
-                    }
-                }
+            let info = std::fs::metadata(&entry)?;
+            if info.len() == 0 && std::fs::remove_file(&entry).is_ok() {
+                trace!("... removing {} since it is zero bytes and its not the current data file id (this: {}, current: {})", entry.display(), file_id, &self.current_data_file.get_id());
             }
         }
 
