@@ -53,11 +53,11 @@ pub fn new(options: Options) -> ErrorResult<Database> {
         source,
     })?;
 
-    let created_dir = create_dir_all(&options.base_dir.as_path());
+    let created_dir = create_dir_all(&options.base_dir);
     if let Err(err_msg) = created_dir {
         return Err(new_err(&format!(
             "Failed to create '{}': {}",
-            &options.base_dir.display(),
+            options.base_dir.display(),
             err_msg
         )));
     }
@@ -117,7 +117,7 @@ impl Database {
         let base_dir = &self.options.base_dir;
 
         let data_files: Vec<PathBuf> = self
-            .get_data_files_except_current(&base_dir)?
+            .get_data_files_except_current(base_dir)?
             .iter()
             .rev()
             .cloned()
@@ -135,14 +135,14 @@ impl Database {
         // first removing all the startup indices:
         let indices_paths = self.glob_files(&base_dir, "index.*")?;
         for index_path in indices_paths {
-            let _ = std::fs::remove_file(index_path.as_path());
+            let _ = std::fs::remove_file(&index_path);
         }
 
         let now = crate::utils::time();
-        let merged_path = &base_dir.join(format!("merge.{}", now));
-        let mut temp_datastore = DataFile::create(&merged_path.as_path(), false)?;
+        let merged_path = base_dir.join(format!("merge.{}", now));
+        let mut temp_datastore = DataFile::create(&merged_path, false)?;
 
-        let index_path = &self.options.base_dir.join(format!("index.{}", now));
+        let index_path = self.options.base_dir.join(format!("index.{}", now));
         let mut index = IndexFile::create(&index_path, false)?;
 
         let keydir = &self.keydir;
@@ -162,6 +162,7 @@ impl Database {
 
             num_entries_written += 1;
         }
+
         drop(temp_datastore);
         drop(index);
 
@@ -179,8 +180,8 @@ impl Database {
         let new_datafile_path = &base_dir.join(crate::config::data_file_format(now));
         trace!(
             "trying to rename data file '{}' to '{}'",
-            &merged_path.display(),
-            &new_datafile_path.display()
+            merged_path.display(),
+            new_datafile_path.display()
         );
         std::fs::rename(&merged_path, new_datafile_path)?;
 
@@ -223,13 +224,8 @@ impl Database {
 
     fn glob_files(&self, base_dir: &Path, pattern: &'static str) -> ErrorResult<Vec<PathBuf>> {
         let glob_path = base_dir.join(pattern);
-        let glob_result = glob(glob_path.to_str().unwrap());
-        if let Err(err_msg) = glob_result {
-            return Err(Box::new(err_msg));
-        }
-
-        let mut entries: Vec<PathBuf> = glob_result?.map(|x| x.unwrap()).collect();
-
+        let glob_result = glob(glob_path.to_str().unwrap())?;
+        let mut entries: Vec<PathBuf> = glob_result.map(|x| x.unwrap()).collect();
         entries.sort_by(|a, b| natord::compare(a.to_str().unwrap(), b.to_str().unwrap()));
         Ok(entries)
     }
