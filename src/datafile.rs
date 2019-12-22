@@ -100,9 +100,12 @@ impl DataFile {
             key: key.to_vec(),
             value: value.to_vec(),
         };
+        use std::io::Write as _;
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
-        bincode::serialize_into(&mut *self.file, &entry)?;
+        // serialize_into is vastly slower than serializing to avec then doing 1 big write
+        let encoded: Vec<u8> = bincode::serialize(&entry)?;
+        self.file.write_all(&encoded)?;
         Ok(offset)
     }
 
