@@ -1,21 +1,18 @@
 pub fn time() -> u128 {
-    let ts = std::time::SystemTime::now()
+    std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_nanos();
-    ts
+        .as_nanos()
 }
 
 pub fn extract_id_from_filename(
     entry: &std::path::PathBuf,
 ) -> Result<u128, Box<dyn std::error::Error>> {
-    let id = entry
+    entry
         .extension()
-        .ok_or(string_error::new_err(
-            "Missing extension (ie. not in format: data.<id>)",
-        ))?
+        .ok_or_else(|| string_error::new_err("Missing extension (ie. not in format: data.<id>)"))?
         .to_str()
         .unwrap()
-        .parse::<u128>()?;
-    Ok(id)
+        .parse()
+        .map_err(Into::into) // cast the FromStr error to dyn std::error::Error
 }

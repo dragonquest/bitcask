@@ -18,25 +18,23 @@ pub struct IndexFile {
 
 impl IndexFile {
     pub fn create(path: &std::path::Path, is_readonly: bool) -> ErrorResult<IndexFile> {
-        let indexfile: std::fs::File;
-
-        if is_readonly {
-            indexfile = OpenOptions::new().read(true).open(&path)?;
+        let indexfile = if is_readonly {
+            OpenOptions::new().read(true).open(&path)?
         } else {
-            indexfile = OpenOptions::new()
+            OpenOptions::new()
                 .read(true)
                 .append(true)
                 .write(true)
                 .create(true)
-                .open(&path)?;
-        }
+                .open(&path)?
+        };
 
         let id = crate::utils::extract_id_from_filename(&path.to_path_buf())?;
 
         let idxfile = IndexFile {
-            id: id,
+            id,
             file: indexfile,
-            is_readonly: is_readonly,
+            is_readonly,
             path: path.to_path_buf(),
         };
 
@@ -56,9 +54,9 @@ impl IndexFile {
     ) -> ErrorResult<u64> {
         let entry = IndexEntry {
             key: key.to_vec(),
-            file_id: file_id,
-            offset: offset,
-            timestamp: timestamp,
+            file_id,
+            offset,
+            timestamp,
         };
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
@@ -85,7 +83,7 @@ impl IndexFile {
     pub fn iter(&mut self) -> IndexFileIterator {
         let file = std::fs::File::open(&self.path).unwrap();
 
-        IndexFileIterator { file: file }
+        IndexFileIterator { file }
     }
 }
 
@@ -100,11 +98,7 @@ impl Iterator for IndexFileIterator {
         let offset = self.file.seek(SeekFrom::Current(0)).unwrap();
 
         let decoded_maybe = bincode::deserialize_from(&self.file);
-        if let Err(_) = decoded_maybe {
-            return None;
-        }
-
-        Some((offset, decoded_maybe.unwrap()))
+        Some((offset, decoded_maybe.ok()?))
     }
 }
 

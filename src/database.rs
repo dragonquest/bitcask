@@ -53,15 +53,13 @@ pub fn new(options: Options) -> ErrorResult<Database> {
         source,
     })?;
 
-    let created_dir = create_dir_all(&options.base_dir.as_path());
+    let created_dir = create_dir_all(&options.base_dir);
     if let Err(err_msg) = created_dir {
-        return Err(new_err(
-            &format!(
-                "Failed to create '{}': {}",
-                &options.base_dir.display(),
-                err_msg
-            )
-        ));
+        return Err(new_err(&format!(
+            "Failed to create '{}': {}",
+            options.base_dir.display(),
+            err_msg
+        )));
     }
 
     let path = std::path::Path::new(&options.base_dir);
@@ -94,7 +92,7 @@ impl Database {
 
         Stats {
             num_immutable_datafiles: (self.data_files.len() as u64),
-            num_keys: (self.keydir.iter().unwrap().count() as u64),
+            num_keys: (self.keydir.iter().count() as u64),
         }
     }
 
@@ -105,7 +103,7 @@ impl Database {
         self.build_keydir(&mut data_files_sorted)
             .map_err(|source| Error::KeyDirFill {
                 path: base_dir.to_path_buf(),
-                source: source,
+                source,
             })?;
 
         self.cleanup()?;
@@ -119,7 +117,7 @@ impl Database {
         let base_dir = &self.options.base_dir;
 
         let data_files: Vec<PathBuf> = self
-            .get_data_files_except_current(&base_dir)?
+            .get_data_files_except_current(base_dir)?
             .iter()
             .rev()
             .cloned()
@@ -137,20 +135,20 @@ impl Database {
         // first removing all the startup indices:
         let indices_paths = self.glob_files(&base_dir, "index.*")?;
         for index_path in indices_paths {
-            let _ = std::fs::remove_file(index_path.as_path());
+            let _ = std::fs::remove_file(&index_path);
         }
 
         let now = crate::utils::time();
-        let merged_path = &base_dir.join(format!("merge.{}", now));
-        let mut temp_datastore = DataFile::create(&merged_path.as_path(), false)?;
+        let merged_path = base_dir.join(format!("merge.{}", now));
+        let mut temp_datastore = DataFile::create(&merged_path, false)?;
 
-        let index_path = &self.options.base_dir.join(format!("index.{}", now));
+        let index_path = self.options.base_dir.join(format!("index.{}", now));
         let mut index = IndexFile::create(&index_path, false)?;
 
         let keydir = &self.keydir;
 
         let mut num_entries_written = 0;
-        for (key, entry) in keydir.iter()? {
+        for (key, entry) in keydir.iter() {
             let value = self.read(&key)?;
 
             // Keys that are in the 'mutable' datafile don't need to be
@@ -164,6 +162,7 @@ impl Database {
 
             num_entries_written += 1;
         }
+
         drop(temp_datastore);
         drop(index);
 
@@ -181,8 +180,8 @@ impl Database {
         let new_datafile_path = &base_dir.join(crate::config::data_file_format(now));
         trace!(
             "trying to rename data file '{}' to '{}'",
-            &merged_path.display(),
-            &new_datafile_path.display()
+            merged_path.display(),
+            new_datafile_path.display()
         );
         std::fs::rename(&merged_path, new_datafile_path)?;
 
@@ -206,11 +205,12 @@ impl Database {
     fn get_data_files_except_current(&self, base_dir: &Path) -> ErrorResult<Vec<PathBuf>> {
         let mut entries = self.glob_files(&base_dir, crate::config::DATA_FILE_GLOB_FORMAT)?;
 
-        entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
+        entries.sort_by(|a, b| natord::compare(a.to_str().unwrap(), b.to_str().unwrap()));
 
         // Remove current data file since the current data file is mutable:
         entries.retain(|x| {
-            x.file_name().unwrap().to_str().unwrap() != self
+            x.file_name().unwrap().to_str().unwrap()
+                != self
                     .current_data_file
                     .path
                     .file_name()
@@ -219,20 +219,15 @@ impl Database {
                     .unwrap()
         });
 
-        return Ok(entries);
+        Ok(entries)
     }
 
     fn glob_files(&self, base_dir: &Path, pattern: &'static str) -> ErrorResult<Vec<PathBuf>> {
         let glob_path = base_dir.join(pattern);
-        let glob_result = glob(glob_path.to_str().unwrap());
-        if let Err(err_msg) = glob_result {
-            return Err(Box::new(err_msg));
-        }
-
-        let mut entries: Vec<PathBuf> = glob_result?.map(|x| x.unwrap()).collect();
-
-        entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
-        return Ok(entries);
+        let glob_result = glob(glob_path.to_str().unwrap())?;
+        let mut entries: Vec<PathBuf> = glob_result.map(|x| x.unwrap()).collect();
+        entries.sort_by(|a, b| natord::compare(a.to_str().unwrap(), b.to_str().unwrap()));
+        Ok(entries)
     }
 
     fn build_keydir(&mut self, datafiles_paths: &mut Vec<PathBuf>) -> ErrorResult<()> {
@@ -241,16 +236,16 @@ impl Database {
             datafiles_paths
         );
 
-        let mut new_keydir = KeyDir::new();
-        let mut new_datafiles: Vec<DataFileMetadata> = Vec::new();
         let base_dir = self.options.base_dir.to_owned();
 
-        let keydir = Arc::new(Mutex::new(&mut new_keydir));
-        let data_files = Arc::new(Mutex::new(&mut new_datafiles));
+        // take ownership of these
+        let keydir = Arc::new(Mutex::new(KeyDir::new()));
+        let data_files = Arc::new(Mutex::new(Vec::new()));
 
         trace!("Database.build_keydir: Starting to rebuild keydir now...");
         datafiles_paths.par_iter_mut().for_each({
             let keydir = Arc::clone(&keydir);
+            let data_files = Arc::clone(&data_files);
 
             move |entry| {
                 let mut counter = 0;
@@ -263,32 +258,32 @@ impl Database {
                 if index_path.exists() {
                     trace!("Database.build_keydir: index found 'index.{}'. Importing data file No={} Path={} ...", file_id, file_id, &entry.display());
 
-                    let mut index = IndexFile::create(&index_path.to_path_buf(), true).unwrap();
+                    let mut index = IndexFile::create(&index_path, true).unwrap();
 
                     for (_, entry) in index.iter() {
                         {
                             let mut keydir = keydir.lock().unwrap();
                             let set_result = keydir.set(&entry.key, entry.file_id, entry.offset, entry.timestamp);
-                            if set_result.is_err() {
-                                trace!("Setting value into keydir has failed: {}", set_result.err().unwrap());
+                            if let Err(err) = set_result {
+                                trace!("Setting value into keydir has failed: {}", err);
                             }
                         }
 
                         counter += 1;
                     }
 
-                    trace!("Database.build_keydir: index 'index.{}' fully read. Imported index file No={} Path={} NumRecords={}", file_id, file_id, &entry.display(), counter);
+                    trace!("Database.build_keydir: index 'index.{}' fully read. Imported index file No={} Path={} NumRecords={}", file_id, file_id, entry.display(), counter);
 
                 } else {
-                    trace!("Database.build_keydir: start loading datafile No={} Path={} NumRecords={}", file_id, &entry.display(), counter);
+                    trace!("Database.build_keydir: start loading datafile No={} Path={} NumRecords={}", file_id, entry.display(), counter);
                     let mut df = DataFile::create(&entry, true).unwrap();
 
                     for (offset, record) in df.iter() {
                         let mut keydir = keydir.lock().unwrap();
 
                         if record.value == crate::config::REMOVE_TOMBSTONE {
-                            trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}: Removing key", file_id, &entry.display(), counter);
-                            let _ignore = keydir.remove(&record.key).unwrap_or_default();
+                            trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}: Removing key", file_id, entry.display(), counter);
+                            keydir.remove(&record.key).unwrap_or_default();
                             continue;
                         }
 
@@ -307,30 +302,46 @@ impl Database {
                         counter += 1;
                     }
 
-                    trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}", file_id, &entry.display(), counter);
+                    trace!("Database.build_keydir: loading datafile No={} Path={} NumRecords={}", file_id, entry.display(), counter);
                 }
 
 
                 let mut data_files = data_files.lock().unwrap();
-                &data_files.push(DataFileMetadata {
+                data_files.push(DataFileMetadata {
                     id: file_id,
                     path: entry.to_path_buf(),
-                });
+                })
             }
         });
 
         trace!("Database.build_keydir: Finished rebuilding keydir ...");
 
+        // take ownership of the arc wrapped value
+        // this shouldn't fail because rayon blocks until its done
+        // try_unwrap gets the value out of the Arc if there aren't any extra refs to it
+        let mut data_files = Arc::try_unwrap(data_files)
+            .ok() // ignore error value
+            // get the value out of the mutex
+            // into_inner gets the value out of the mutex if its not locked
+            .and_then(|mutex| mutex.into_inner().ok())
+            .expect("rayon to finish");
+
+        let keydir = Arc::try_unwrap(keydir)
+            .ok() // ignore error value
+            // get the value out of the mutex
+            .and_then(|mutex| mutex.into_inner().ok())
+            .expect("rayon to finish");
+
         // Removing the current file as the current one is not an immutable data file yet:
-        new_datafiles.retain(|df| df.id != self.current_data_file.id);
+        data_files.retain(|df| df.id != self.current_data_file.id);
 
         trace!(
             "Assigning new data files to internal struct: {:?} => {:?}",
-            &self.data_files,
-            &new_datafiles
+            self.data_files,
+            data_files
         );
-        std::mem::replace(&mut self.data_files, new_datafiles);
-        std::mem::replace(&mut self.keydir, new_keydir);
+        self.data_files = data_files;
+        self.keydir = keydir;
 
         self.cleanup()?;
 
@@ -343,16 +354,19 @@ impl Database {
 
         for entry in entries {
             let file_id = crate::utils::extract_id_from_filename(&entry)?;
+            if self.current_data_file.get_id() == file_id {
+                continue;
+            }
 
             // cleaning up old files with 0 bytes size:
-            if self.current_data_file.get_id() != file_id {
-                let info = std::fs::metadata(&entry).unwrap();
-                if info.len() == 0 {
-                    let remove = std::fs::remove_file(Path::new(&entry));
-                    if remove.is_ok() {
-                        trace!("... removing {} since it is zero bytes and its not the current data file id (this: {}, current: {})", &entry.to_str().unwrap(), file_id, &self.current_data_file.get_id());
-                    }
-                }
+            let info = std::fs::metadata(&entry)?;
+            if info.len() == 0 && std::fs::remove_file(&entry).is_ok() {
+                trace!(
+                    "... removing {} since it is zero bytes and its not the current data file id (this: {}, current: {})",
+                    entry.display(),
+                    file_id,
+                    self.current_data_file.get_id()
+                );
             }
         }
 
@@ -367,7 +381,7 @@ impl Database {
 
         trace!(
             "Database.switch_to_new_data_file: New data file is {} (file_id={})",
-            &new_path.display(),
+            new_path.display(),
             data_file_id
         );
 
@@ -377,7 +391,7 @@ impl Database {
         let data_file_id = self.current_data_file.get_id();
         trace!(
             "Database.switch_to_new_data_file: Switched data file. Old_Id={} New_Id={}",
-            &old_data_file.get_id(),
+            old_data_file.get_id(),
             data_file_id
         );
 
@@ -399,7 +413,13 @@ impl Database {
         self.keydir.set(&key, data_file_id, offset, timestamp)?;
 
         if offset >= self.data_file_limit {
-            trace!("Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file", data_file_id, String::from_utf8(key.to_vec())?, offset, self.data_file_limit);
+            trace!(
+                "Database.write: Offset threshold reached for data file id '{}', key '{}':  {} < {}. Switching to new data file",
+                data_file_id,
+                std::str::from_utf8(&key)?,
+                offset,
+                self.data_file_limit
+            );
             return self.switch_to_new_data_file();
         }
 
@@ -416,10 +436,10 @@ impl Database {
         trace!(
             "Database.read: Trying to read from offset {} from file {}",
             entry.offset,
-            &path.display()
+            path.display()
         );
-        let found_entry = data_file.read(entry.offset)?;
 
+        let found_entry = data_file.read(entry.offset)?;
         Ok(found_entry.value)
     }
 
@@ -438,29 +458,22 @@ impl Database {
         trace!(
             "Database.read: Trying to read from offset {} from file {}",
             entry.offset,
-            &path.display()
+            path.display()
         );
         let found_entry = data_file.read(entry.offset)?;
-
         let _ = self.data_files_cache.put(entry.file_id, data_file);
-
         Ok(found_entry.value)
     }
 
     pub fn remove(&mut self, key: &[u8]) -> ErrorResult<()> {
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-
+        let timestamp = crate::utils::time();
         self.current_data_file.remove(key, timestamp)?;
         self.keydir.remove(key)
     }
 
     // get_datafile_at should only be used for debugging:
     pub fn get_datafile_at(&mut self, index: u32) -> DataFile {
-
         let df = self.data_files.get_mut(index as usize).unwrap();
-
         DataFile::create(&df.path, true).unwrap()
     }
 
@@ -469,19 +482,23 @@ impl Database {
         DataFile::create(&path, true).unwrap()
     }
 
-    pub fn keys(&self) -> std::collections::btree_map::Keys<Vec<u8>, KeyDirEntry> {
+    pub fn keys(&self) -> impl Iterator<Item = &Vec<u8>> {
         self.keydir.keys()
     }
 
-    pub fn keys_range(&self, min: &[u8], max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range(
+        &self,
+        min: &[u8],
+        max: &[u8],
+    ) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         self.keydir.keys_range(min, max)
     }
 
-    pub fn keys_range_min(&self, min: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_min(&self, min: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         self.keydir.keys_range_min(min)
     }
 
-    pub fn keys_range_max(&self, max: &[u8]) -> std::collections::btree_map::Range<Vec<u8>, KeyDirEntry> {
+    pub fn keys_range_max(&self, max: &[u8]) -> impl Iterator<Item = (&Vec<u8>, &KeyDirEntry)> {
         self.keydir.keys_range_max(max)
     }
 

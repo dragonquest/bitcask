@@ -45,7 +45,7 @@ impl Drop for CleanFile {
             if metadata.len() == 0 {
                 log::trace!(
                     "Datafile.drop: removing file since its empty {}",
-                    &path.display()
+                    path.display()
                 );
                 let _ = std::fs::remove_file(path);
             }
@@ -64,28 +64,26 @@ pub struct DataFile {
 
 impl DataFile {
     pub fn create(path: &std::path::Path, is_readonly: bool) -> ErrorResult<DataFile> {
-        let datafile: std::fs::File;
-
-        if is_readonly {
-            datafile = OpenOptions::new().read(true).open(&path)?;
+        let datafile = if is_readonly {
+            OpenOptions::new().read(true).open(&path)?
         } else {
-            datafile = OpenOptions::new()
+            OpenOptions::new()
                 .read(true)
                 .append(true)
                 .write(true)
                 .create(true)
-                .open(&path)?;
-        }
+                .open(&path)?
+        };
 
         let id = crate::utils::extract_id_from_filename(&path.to_path_buf())?;
 
         let df = DataFile {
-            id: id,
+            id,
             file: CleanFile {
                 file: Some(datafile),
                 path: path.to_path_buf(),
             },
-            is_readonly: is_readonly,
+            is_readonly,
             path: path.to_path_buf(),
         };
 
@@ -97,23 +95,17 @@ impl DataFile {
     }
 
     pub fn write(&mut self, key: &[u8], value: &[u8], timestamp: u128) -> ErrorResult<u64> {
-        use std::io::Write;
-
         let entry = Entry {
-            timestamp: timestamp,
+            timestamp,
             key: key.to_vec(),
             value: value.to_vec(),
         };
+        use std::io::Write as _;
 
         let offset = self.file.seek(SeekFrom::Current(0))?;
-
+        // serialize_into is vastly slower than serializing to avec then doing 1 big write
         let encoded: Vec<u8> = bincode::serialize(&entry)?;
-
-        let written = self.file.write(&encoded);
-        if let Err(err_msg) = written {
-            return Err(Box::new(err_msg));
-        }
-
+        self.file.write_all(&encoded)?;
         Ok(offset)
     }
 
@@ -124,23 +116,17 @@ impl DataFile {
     pub fn read(&mut self, offset: u64) -> ErrorResult<Entry> {
         let mmap = unsafe { memmap::MmapOptions::new().map(&self.file)? };
         let decoded: Entry = bincode::deserialize(&mmap[(offset as usize)..])?;
-
         Ok(decoded)
     }
 
     pub fn iter(&mut self) -> DataFileIterator {
         let file = std::fs::File::open(&self.path).unwrap();
 
-        DataFileIterator { file: file }
+        DataFileIterator { file }
     }
 
     pub fn sync(&mut self) -> ErrorResult<()> {
-        let res = self.file.sync_all();
-        if res.is_ok() {
-            return Ok(());
-        }
-
-        Err(Box::new(res.err().unwrap()))
+        self.file.sync_all().map_err(Into::into)
     }
 
     pub fn inspect(&mut self, with_header: bool) -> String {
@@ -161,10 +147,10 @@ impl DataFile {
                 "{:0>8} | {: >1} | {} | {}\n",
                 offset,
                 op,
-                String::from_utf8(entry.key.to_owned()).unwrap(),
-                String::from_utf8(entry.value.to_owned()).unwrap()
+                std::str::from_utf8(&entry.key).unwrap(),
+                std::str::from_utf8(&entry.value).unwrap()
             );
-            list.push_str(line.to_owned().as_str());
+            list.push_str(&line);
         }
 
         list.trim_end().to_string()
@@ -180,13 +166,8 @@ impl Iterator for DataFileIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let offset = self.file.seek(SeekFrom::Current(0)).unwrap();
-
         let decoded_maybe = bincode::deserialize_from(&self.file);
-        if let Err(_) = decoded_maybe {
-            return None;
-        }
-
-        Some((offset, decoded_maybe.unwrap()))
+        Some((offset, decoded_maybe.ok()?))
     }
 }
 

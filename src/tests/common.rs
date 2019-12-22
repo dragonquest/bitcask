@@ -1,9 +1,7 @@
 use std::path::PathBuf;
 
-use crate as bitcask;
-
 pub struct DatabaseTesting {
-    db: bitcask::Database,
+    db: crate::Database,
     base_dir: std::path::PathBuf,
 
     cleanup_on_drop: bool,
@@ -14,7 +12,7 @@ impl DatabaseTesting {
         std::env::set_var("RUST_TEST_THREADS", "1");
         // std::env::set_var("RUST_LOG", "bitcask");
 
-        let opts = bitcask::Options {
+        let opts = crate::Options {
             base_dir: std::path::PathBuf::from(format!("./data/{}", db_name)),
             data_file_limit: max_datafile_size_bytes,
         };
@@ -23,11 +21,11 @@ impl DatabaseTesting {
 
         let base_dir = opts.base_dir.to_owned();
 
-        let db = bitcask::new(opts).unwrap();
+        let db = crate::new(opts).unwrap();
 
         DatabaseTesting {
-            db: db,
-            base_dir: base_dir,
+            db,
+            base_dir,
             cleanup_on_drop: true,
         }
     }
@@ -40,18 +38,18 @@ impl DatabaseTesting {
         std::env::set_var("RUST_TEST_THREADS", "1");
         // std::env::set_var("RUST_LOG", "bitcask");
 
-        let opts = bitcask::Options {
+        let opts = crate::Options {
             base_dir: std::path::PathBuf::from(format!("./data/{}", db_name)),
             data_file_limit: max_datafile_size_bytes,
         };
 
         let base_dir = opts.base_dir.to_owned();
 
-        let db = bitcask::new(opts).unwrap();
+        let db = crate::new(opts).unwrap();
 
         DatabaseTesting {
-            db: db,
-            base_dir: base_dir,
+            db,
+            base_dir,
             cleanup_on_drop: true,
         }
     }
@@ -87,12 +85,12 @@ impl DatabaseTesting {
         let mut entries: Vec<PathBuf> = glob_result.map(|x| x.unwrap()).collect();
 
         entries.sort_by(|a, b| natord::compare(&a.to_str().unwrap(), &b.to_str().unwrap()));
-        return entries;
+        entries
     }
 }
 
 impl std::ops::Deref for DatabaseTesting {
-    type Target = bitcask::Database;
+    type Target = crate::Database;
 
     fn deref(&self) -> &Self::Target {
         &self.db
